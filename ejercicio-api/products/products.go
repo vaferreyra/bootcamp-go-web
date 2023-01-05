@@ -10,4 +10,6 @@ type Product struct {
 	Price        float64
 }
 
-var Products = make([]Product, 0)
+type ProductCatalog struct {
+	Products []Product
+}

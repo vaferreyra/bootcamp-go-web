@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"go-web-api/products"
+	"go-web-api/productsService"
 	"net/http"
 	"strconv"
 
@@ -13,10 +14,10 @@ func Ping(c *gin.Context) {
 }
 
 func GetAllProducts(c *gin.Context) {
-	products := products.Products
+	products := productsService.ProductsCatalog
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Succed to get all products",
-		"data":    products,
+		"data":    products.Products,
 	})
 }
 
@@ -32,7 +33,7 @@ func GetProductById(c *gin.Context) {
 
 	var productToReturn products.Product
 
-	for _, product := range products.Products {
+	for _, product := range productsService.ProductsCatalog.Products {
 		if product.ID == paramId {
 			productToReturn = product
 			break
@@ -63,7 +64,7 @@ func GetProductsMoreExpensiveThan(c *gin.Context) {
 		return
 	}
 	productsToReturn := make([]products.Product, 0)
-	for _, product := range products.Products {
+	for _, product := range productsService.ProductsCatalog.Products {
 		if price != 0 && product.Price >= price {
 			productsToReturn = append(productsToReturn, product)
 		}

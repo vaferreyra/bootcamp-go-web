@@ -1,30 +1,14 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"go-web-api/handlers"
-	"go-web-api/products"
-	"os"
+	"go-web-api/productsService"
 
 	"github.com/gin-gonic/gin"
 )
 
-func readProductJson() {
-	data, err := os.ReadFile("products.json")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if err := json.Unmarshal(data, &products.Products); err != nil {
-		fmt.Println(err)
-		return
-	}
-}
-
 func main() {
-	readProductJson()
+	productsService.ReadProductJson()
 
 	router := gin.Default()
 	productsRouter := router.Group("/products")
