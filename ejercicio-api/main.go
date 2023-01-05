@@ -27,11 +27,12 @@ func main() {
 	readProductJson()
 
 	router := gin.Default()
+	productsRouter := router.Group("/products")
 
 	router.GET("/ping", handlers.Ping)
-	router.GET("/products", handlers.GetAllProducts)
-	router.GET("/products/:id", handlers.GetProductById)
-	router.GET("products/search", handlers.GetProductsMoreExpensiveThan)
+	productsRouter.GET("/", handlers.GetAllProducts)
+	productsRouter.GET("/:id", handlers.GetProductById)
+	productsRouter.GET("/search", handlers.GetProductsMoreExpensiveThan)
 
-	router.Run()
+	router.Run(":8080")
 }
