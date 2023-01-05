@@ -15,15 +15,13 @@ func main() {
 	router := gin.Default()
 
 	router.POST("/saludo", func(ctx *gin.Context) {
-		var r FullName
+		var contextName FullName
 
-		if err := ctx.BindJSON(&r); err != nil {
+		if err := ctx.BindJSON(&contextName); err != nil {
 			panic(err)
 		}
 
-		ctx.String(http.StatusOK, "Hola %s %s", r.Nombre, r.Apellido)
-
-		// ctx.String(http.StatusOK, "Hola %s %s", nombre, apellido)
+		ctx.String(http.StatusOK, "Hola %s %s", contextName.Nombre, contextName.Apellido)
 	})
 
 	router.Run(":8080")
