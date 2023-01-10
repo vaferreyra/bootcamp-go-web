@@ -1,15 +1,11 @@
-package products
+package domain
 
 type Product struct {
 	ID           int
 	Name         string
 	Quantity     int
-	Code_value   int
+	Code_value   string
 	Is_published bool
 	Expiration   string
 	Price        float64
-}
-
-type ProductCatalog struct {
-	Products []Product
 }
