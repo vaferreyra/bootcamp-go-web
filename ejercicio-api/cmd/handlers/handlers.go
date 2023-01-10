@@ -12,17 +12,12 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func Get() []models.Product {
-	return services.Get()
-}
-
 func Ping(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "Pong")
 }
 
 func GetAllProducts(ctx *gin.Context) {
-	products := Get()
-	ctx.JSON(http.StatusOK, response.Ok("Succeed to get all products", products))
+	ctx.JSON(http.StatusOK, response.Ok("Succeed to get all products", services.ProductsCatalog.Products))
 }
 
 func GetProductById(ctx *gin.Context) {
@@ -34,7 +29,7 @@ func GetProductById(ctx *gin.Context) {
 
 	var productToReturn models.Product
 
-	for _, product := range Get() {
+	for _, product := range services.ProductsCatalog.Products {
 		if product.ID == paramId {
 			productToReturn = product
 			break
@@ -89,6 +84,5 @@ func CreateProduct(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, response.Err(err))
 		return
 	}
-
 	ctx.JSON(http.StatusCreated, response.Ok("Product created successfuly", newProduct))
 }
