@@ -37,5 +37,6 @@ func (r *Router) SetProduct() {
 	productRoute.POST("", h.Create())
 	productRoute.PUT("/:id", h.Update())
 	productRoute.PATCH("/:id", h.PartialUpdate())
+	productRoute.DELETE("/:id", h.Delete())
 
 }

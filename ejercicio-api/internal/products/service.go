@@ -18,6 +18,7 @@ type Service interface {
 	// write
 	CreateProduct(name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error)
 	Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error)
+	Delete(id int) error
 }
 
 type service struct {
@@ -63,4 +64,8 @@ func (service *service) CreateProduct(name string, quantity int, code_value stri
 
 func (service *service) Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error) {
 	return service.rp.Update(id, name, quantity, code_value, is_published, expiration, price)
+}
+
+func (service *service) Delete(id int) error {
+	return service.rp.Delete(id)
 }

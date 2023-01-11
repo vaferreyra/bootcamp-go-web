@@ -179,6 +179,23 @@ func (p *Product) PartialUpdate() gin.HandlerFunc {
 	}
 }
 
+func (p *Product) Delete() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, response.Err(ErrInvalidParameter))
+			return
+		}
+
+		if err := p.sv.Delete(int(id)); err != nil {
+			ctx.JSON(http.StatusNotFound, response.Err(product.ErrProdutNotFound))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, response.Ok("Product deleted successfully", id))
+	}
+}
+
 func IsValidProduct(product NewProductRequest) (result bool, err error) {
 	if product.Name == "" {
 		err = ErrEmptyName

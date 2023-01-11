@@ -19,6 +19,7 @@ type Repository interface {
 	// write
 	CreateProduct(domain.Product) (int, error)
 	Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error)
+	Delete(id int) error
 }
 
 type repository struct {
@@ -96,4 +97,22 @@ func (r *repository) Update(id int, name string, quantity int, code_value string
 		return domain.Product{}, ErrProdutNotFound
 	}
 	return updatedProduct, nil
+}
+
+func (r *repository) Delete(id int) (err error) {
+	var deleted bool
+	products := *r.db
+	for index := range products {
+		if products[index].ID != id {
+			continue
+		}
+		products = append(products[:index], products[index+1:]...)
+		deleted = !deleted
+		break
+	}
+	if !deleted {
+		err = ErrProdutNotFound
+		return
+	}
+	return
 }
