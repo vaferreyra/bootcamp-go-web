@@ -3,7 +3,7 @@ package routes
 import (
 	"go-web-api/cmd/handlers"
 	"go-web-api/internal/domain"
-	"go-web-api/internal/product"
+	product "go-web-api/internal/products"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,5 +36,6 @@ func (r *Router) SetProduct() {
 	// Write
 	productRoute.POST("", h.Create())
 	productRoute.PUT("/:id", h.Update())
+	productRoute.PATCH("/:id", h.PartialUpdate())
 
 }

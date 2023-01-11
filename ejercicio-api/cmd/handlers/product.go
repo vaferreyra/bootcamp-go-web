@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
-	"go-web-api/internal/product"
+	"go-web-api/internal/products"
+	product "go-web-api/internal/products"
 	"go-web-api/pkg/response"
 	"net/http"
 	"strconv"
@@ -135,6 +137,45 @@ func (p *Product) Update() gin.HandlerFunc {
 			return
 		}
 		ctx.JSON(http.StatusCreated, response.Ok("Product updated", result))
+	}
+}
+
+func (p *Product) PartialUpdate() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Obtengo el id pasado por parámetro
+		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, response.Err(ErrInvalidId))
+			return
+		}
+
+		// Me traigo el producto desde la base
+		product, err := p.sv.GetProductById(int(id))
+		if err != nil {
+			switch err {
+			case products.ErrProdutNotFound:
+				ctx.JSON(http.StatusNotFound, response.Err(products.ErrProdutNotFound))
+			default:
+				ctx.JSON(http.StatusInternalServerError, nil)
+			}
+			return
+		}
+		if err = json.NewDecoder(ctx.Request.Body).Decode(&product); err != nil {
+			ctx.JSON(http.StatusBadRequest, response.Err(ErrInvalidBody))
+			return
+		}
+		productUpdated, err := p.sv.Update(product.ID, product.Name, product.Quantity, product.Code_value, product.Is_published, product.Expiration, product.Price)
+		if err != nil {
+			switch err {
+			case products.ErrProdutNotFound:
+				ctx.JSON(http.StatusNotFound, response.Err(products.ErrProdutNotFound))
+			default:
+				ctx.JSON(http.StatusInternalServerError, nil)
+			}
+			return
+		}
+
+		ctx.JSON(http.StatusOK, response.Ok("Product updated", productUpdated))
 	}
 }
 
