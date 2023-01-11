@@ -12,6 +12,11 @@ var (
 	ErrInvalidDate             = errors.New("Invalid date of expiration")
 	ErrExpirationLength        = errors.New("Expiration date must have XX/XX/XXXX format")
 	ErrExpirationNotNumber     = errors.New("Expiration date must be numbers")
+	ErrEmptyName               = errors.New("The product's name cannot be empty")
+	ErrEmptyExpiration         = errors.New("The product's expiration cannot be empty")
+	ErrEmptyCodeValue          = errors.New("The product's code value cannot be empty")
+	ErrInvalidQuantity         = errors.New("The product's quantity must be > 0")
+	ErrInvalidPrice            = errors.New("The product's price must be > 0")
 )
 
 type Service interface {
@@ -47,6 +52,26 @@ func (service *service) GetProductsMoreExpensiveThan(price float64) []domain.Pro
 func (service *service) CreateProduct(name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error) {
 	if service.rp.ExistCodeValue(code_value) {
 		return domain.Product{}, ErrProductCodeAlreadyExist
+	}
+
+	if name == "" {
+		return domain.Product{}, ErrEmptyName
+	}
+
+	if quantity <= 0 {
+		return domain.Product{}, ErrInvalidQuantity
+	}
+
+	if code_value == "" {
+		return domain.Product{}, ErrEmptyCodeValue
+	}
+
+	if price <= 0 {
+		return domain.Product{}, ErrInvalidPrice
+	}
+
+	if expiration == "" {
+		return domain.Product{}, ErrEmptyExpiration
 	}
 
 	_, err := IsValidExpiration(expiration)
