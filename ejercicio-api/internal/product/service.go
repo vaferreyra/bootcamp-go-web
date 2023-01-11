@@ -3,10 +3,15 @@ package product
 import (
 	"errors"
 	"go-web-api/internal/domain"
+	"strconv"
+	"strings"
 )
 
 var (
 	ErrProductCodeAlreadyExist = errors.New("Code value already exists")
+	ErrInvalidDate             = errors.New("Invalid date of expiration")
+	ErrExpirationLength        = errors.New("Expiration date must have XX/XX/XXXX format")
+	ErrExpirationNotNumber     = errors.New("Expiration date must be numbers")
 )
 
 type Service interface {
@@ -43,6 +48,12 @@ func (service *service) CreateProduct(name string, quantity int, code_value stri
 	if service.rp.ExistCodeValue(code_value) {
 		return domain.Product{}, ErrProductCodeAlreadyExist
 	}
+
+	_, err := IsValidExpiration(expiration)
+	if err != nil {
+		return domain.Product{}, err
+	}
+
 	newProduct := domain.Product{
 		Name:         name,
 		Quantity:     quantity,
@@ -57,4 +68,34 @@ func (service *service) CreateProduct(name string, quantity int, code_value stri
 	}
 	newProduct.ID = lastId
 	return newProduct, nil
+}
+
+func IsValidExpiration(date string) (result bool, err error) {
+	dateFormatted := strings.Split(date, "/")
+	listOfInt := []int{}
+	if len(dateFormatted) != 3 {
+		err = ErrExpirationLength
+		return
+	}
+
+	for _, value := range dateFormatted {
+		v, er := strconv.Atoi(value)
+		if er != nil {
+			err = ErrExpirationNotNumber
+			return
+		}
+		listOfInt = append(listOfInt, v)
+	}
+
+	day := listOfInt[0]
+	month := listOfInt[1]
+	year := listOfInt[2]
+
+	condition := day > 0 && day <= 31 && month > 0 && month <= 12 && year > 2022
+	if !condition {
+		err = ErrInvalidDate
+		return
+	}
+	result = !result
+	return
 }
