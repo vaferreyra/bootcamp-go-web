@@ -75,7 +75,6 @@ func (r *repository) CreateProduct(newProduct domain.Product) (int, error) {
 
 func (r *repository) Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error) {
 	var updated bool
-	products := *r.db
 	var updatedProduct = domain.Product{
 		Name:         name,
 		Quantity:     quantity,
@@ -85,10 +84,10 @@ func (r *repository) Update(id int, name string, quantity int, code_value string
 		Price:        price,
 	}
 
-	for i, p := range products {
+	for i, p := range *r.db {
 		if p.ID == id {
 			updatedProduct.ID = id
-			products[i] = updatedProduct
+			(*r.db)[i] = updatedProduct
 			updated = !updated
 		}
 	}
@@ -101,12 +100,11 @@ func (r *repository) Update(id int, name string, quantity int, code_value string
 
 func (r *repository) Delete(id int) (err error) {
 	var deleted bool
-	products := *r.db
-	for index := range products {
-		if products[index].ID != id {
+	for index := range *r.db {
+		if (*r.db)[index].ID != id {
 			continue
 		}
-		products = append(products[:index], products[index+1:]...)
+		*r.db = append((*r.db)[:index], (*r.db)[index+1:]...)
 		deleted = !deleted
 		break
 	}

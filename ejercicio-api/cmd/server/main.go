@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func loadProducts(path string, list *[]domain.Product) {
@@ -22,9 +23,13 @@ func loadProducts(path string, list *[]domain.Product) {
 }
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
+
 	var db []domain.Product
 
-	loadProducts("../products.json", &db)
+	loadProducts("products.json", &db)
 
 	en := gin.Default()
 	router := routes.NewRouter(&db, en)

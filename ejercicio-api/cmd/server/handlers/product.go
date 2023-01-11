@@ -7,6 +7,7 @@ import (
 	product "go-web-api/internal/products"
 	"go-web-api/pkg/response"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,7 @@ var (
 	ErrEmptyCodeValue      = errors.New("The product's code value cannot be empty")
 	ErrInvalidQuantity     = errors.New("The product's quantity must be > 0")
 	ErrInvalidPrice        = errors.New("The product's price must be > 0")
+	ErrUserUnauthorized    = errors.New("User unauthorized")
 )
 
 type NewProductRequest struct {
@@ -87,6 +89,12 @@ func (p *Product) GetMoreExpensiveThan() gin.HandlerFunc {
 
 func (p *Product) Create() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		token := ctx.GetHeader("token")
+		if token != os.Getenv("TOKEN") {
+			ctx.JSON(http.StatusUnauthorized, response.Err(ErrUserUnauthorized))
+			return
+		}
+
 		var req NewProductRequest
 
 		if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -112,6 +120,13 @@ func (p *Product) Create() gin.HandlerFunc {
 
 func (p *Product) Update() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// Consigo token de usuario y verifico que sea valido
+		token := ctx.GetHeader("token")
+		if token != os.Getenv("TOKEN") {
+			ctx.JSON(http.StatusUnauthorized, response.Err(ErrUserUnauthorized))
+			return
+		}
+
 		// Busco si el producto existe en DB
 		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 		if err != nil {
@@ -142,6 +157,13 @@ func (p *Product) Update() gin.HandlerFunc {
 
 func (p *Product) PartialUpdate() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// Obtengo token de usuario y verifico que sea valido
+		token := ctx.GetHeader("token")
+		if token != os.Getenv("TOKEN") {
+			ctx.JSON(http.StatusUnauthorized, response.Err(ErrUserUnauthorized))
+			return
+		}
+
 		// Obtengo el id pasado por parámetro
 		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 		if err != nil {
@@ -181,6 +203,13 @@ func (p *Product) PartialUpdate() gin.HandlerFunc {
 
 func (p *Product) Delete() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// Obtengo token de usuario y verifico que sea valido
+		token := ctx.GetHeader("token")
+		if token != os.Getenv("TOKEN") {
+			ctx.JSON(http.StatusUnauthorized, response.Err(ErrUserUnauthorized))
+			return
+		}
+
 		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, response.Err(ErrInvalidParameter))
