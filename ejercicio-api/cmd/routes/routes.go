@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"go-web-api/cmd/handlers"
+	"go-web-api/cmd/server/handlers"
 	"go-web-api/internal/domain"
 	product "go-web-api/internal/products"
 
