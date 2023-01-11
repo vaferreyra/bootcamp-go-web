@@ -29,11 +29,12 @@ func (r *Router) SetProduct() {
 	productRoute := r.en.Group("/products")
 
 	// Read
-	productRoute.GET("", h.GetAllProducts())
-	productRoute.GET("/:id", h.GetProductById())
-	productRoute.GET("/search", h.GetProductsMoreExpensiveThan())
+	productRoute.GET("", h.GetAll())
+	productRoute.GET("/:id", h.GetById())
+	productRoute.GET("/search", h.GetMoreExpensiveThan())
 
 	// Write
-	productRoute.POST("", h.CreateProduct())
+	productRoute.POST("", h.Create())
+	productRoute.PUT("/:id", h.Update())
 
 }

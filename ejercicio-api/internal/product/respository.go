@@ -18,6 +18,7 @@ type Repository interface {
 
 	// write
 	CreateProduct(domain.Product) (int, error)
+	Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error)
 }
 
 type repository struct {
@@ -69,4 +70,30 @@ func (r *repository) CreateProduct(newProduct domain.Product) (int, error) {
 	newProduct.ID = r.lastID
 	*r.db = append(*r.db, newProduct)
 	return r.lastID, nil
+}
+
+func (r *repository) Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error) {
+	var updated bool
+	products := *r.db
+	var updatedProduct = domain.Product{
+		Name:         name,
+		Quantity:     quantity,
+		Code_value:   code_value,
+		Is_published: is_published,
+		Expiration:   expiration,
+		Price:        price,
+	}
+
+	for i, p := range products {
+		if p.ID == id {
+			updatedProduct.ID = id
+			products[i] = updatedProduct
+			updated = !updated
+		}
+	}
+
+	if !updated {
+		return domain.Product{}, ErrProdutNotFound
+	}
+	return updatedProduct, nil
 }
