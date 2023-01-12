@@ -26,7 +26,7 @@ type service struct {
 }
 
 func NewService(rp Repository) Service {
-	return &service{rp: rp}
+	return &service{rp}
 }
 
 func (service *service) GetAllProducts() (products []domain.Product, err error) {
@@ -42,10 +42,6 @@ func (service *service) GetProductsMoreExpensiveThan(price float64) []domain.Pro
 }
 
 func (service *service) CreateProduct(name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error) {
-	if service.rp.ExistCodeValue(code_value) {
-		return domain.Product{}, ErrProductCodeAlreadyExist
-	}
-
 	newProduct := domain.Product{
 		Name:         name,
 		Quantity:     quantity,
@@ -54,16 +50,30 @@ func (service *service) CreateProduct(name string, quantity int, code_value stri
 		Expiration:   expiration,
 		Price:        price,
 	}
-	lastId, err := service.rp.CreateProduct(newProduct)
+	idCreated, err := service.rp.CreateProduct(newProduct)
 	if err != nil {
 		return domain.Product{}, err
 	}
-	newProduct.ID = lastId
+
+	newProduct.ID = idCreated
+
 	return newProduct, nil
 }
 
 func (service *service) Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error) {
-	return service.rp.Update(id, name, quantity, code_value, is_published, expiration, price)
+	newProduct := domain.Product{
+		Name:         name,
+		Quantity:     quantity,
+		Code_value:   code_value,
+		Is_published: is_published,
+		Expiration:   expiration,
+		Price:        price,
+	}
+	product, err := service.rp.Update(id, newProduct)
+	if err != nil {
+		return domain.Product{}, err
+	}
+	return product, nil
 }
 
 func (service *service) Delete(id int) error {

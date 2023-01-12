@@ -2,18 +2,18 @@ package routes
 
 import (
 	"go-web-api/cmd/server/handlers"
-	"go-web-api/internal/domain"
 	product "go-web-api/internal/products"
+	"go-web-api/pkg/store"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Router struct {
-	db *[]domain.Product
+	db store.Store
 	en *gin.Engine
 }
 
-func NewRouter(db *[]domain.Product, en *gin.Engine) *Router {
+func NewRouter(db store.Store, en *gin.Engine) *Router {
 	return &Router{db: db, en: en}
 }
 
@@ -22,7 +22,7 @@ func (r *Router) SetRoutes() {
 }
 
 func (r *Router) SetProduct() {
-	rp := product.NewRepository(r.db, 500)
+	rp := product.NewRepository(r.db)
 	sv := product.NewService(rp)
 	h := handlers.NewProduct(sv)
 

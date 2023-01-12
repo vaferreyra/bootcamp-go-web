@@ -3,6 +3,7 @@ package products
 import (
 	"errors"
 	"go-web-api/internal/domain"
+	"go-web-api/pkg/store"
 )
 
 var (
@@ -14,40 +15,54 @@ type Repository interface {
 	GetAllProducts() (products []domain.Product, err error)
 	GetProductById(id int) (domain.Product, error)
 	GetProductsMoreExpensiveThan(price float64) []domain.Product
-	ExistCodeValue(codeValue string) (response bool)
 
 	// write
 	CreateProduct(domain.Product) (int, error)
-	Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error)
+	Update(id int, product domain.Product) (domain.Product, error)
 	Delete(id int) error
+
+	// private
+	existCodeValue(codeValue string) (response bool)
 }
 
 type repository struct {
-	db     *[]domain.Product
-	lastID int
+	db store.Store
 }
 
-func NewRepository(db *[]domain.Product, lastId int) Repository {
-	return &repository{db: db, lastID: lastId}
+// NewRepository crea un nuevo Repository que interactuará con la db dada
+func NewRepository(db store.Store) Repository {
+	return &repository{db}
 }
 
 // read functions
-func (r *repository) GetAllProducts() ([]domain.Product, error) {
-	return *r.db, nil
+func (r *repository) GetAllProducts() (ps []domain.Product, er error) {
+	products, err := r.db.GetAll()
+	if err != nil {
+		er = err
+		return
+	}
+	ps = products
+	return
 }
 
-func (r *repository) GetProductById(id int) (domain.Product, error) {
-	for _, p := range *r.db {
-		if p.ID == id {
-			return p, nil
-		}
+func (r *repository) GetProductById(id int) (p domain.Product, er error) {
+	product, err := r.db.GetOne(id)
+	if err != nil {
+		er = err
+		return
 	}
-	return domain.Product{}, ErrProdutNotFound
+	p = product
+	return
 }
 
 func (r *repository) GetProductsMoreExpensiveThan(price float64) []domain.Product {
-	products := make([]domain.Product, 0)
-	for _, p := range *r.db {
+	var products []domain.Product
+	list, err := r.db.GetAll()
+	if err != nil {
+		return products
+	}
+
+	for _, p := range list {
 		if p.Price > price {
 			products = append(products, p)
 		}
@@ -55,8 +70,13 @@ func (r *repository) GetProductsMoreExpensiveThan(price float64) []domain.Produc
 	return products
 }
 
-func (r *repository) ExistCodeValue(codeValue string) (response bool) {
-	for _, product := range *r.db {
+func (r *repository) existCodeValue(codeValue string) (response bool) {
+	list, err := r.db.GetAll()
+	if err != nil {
+		return
+	}
+
+	for _, product := range list {
 		if product.Code_value == codeValue {
 			response = !response
 			return
@@ -66,50 +86,39 @@ func (r *repository) ExistCodeValue(codeValue string) (response bool) {
 }
 
 // write functions
-func (r *repository) CreateProduct(newProduct domain.Product) (int, error) {
-	r.lastID++
-	newProduct.ID = r.lastID
-	*r.db = append(*r.db, newProduct)
-	return r.lastID, nil
+func (r *repository) CreateProduct(newProduct domain.Product) (id int, err error) {
+	if r.existCodeValue(newProduct.Code_value) {
+		err = ErrProductCodeAlreadyExist
+		return
+	}
+
+	idCreated, er := r.db.AddOne(newProduct)
+	if er != nil {
+		err = er
+		return
+	}
+
+	id = idCreated
+	return
 }
 
-func (r *repository) Update(id int, name string, quantity int, code_value string, is_published bool, expiration string, price float64) (domain.Product, error) {
-	var updated bool
-	var updatedProduct = domain.Product{
-		Name:         name,
-		Quantity:     quantity,
-		Code_value:   code_value,
-		Is_published: is_published,
-		Expiration:   expiration,
-		Price:        price,
+func (r *repository) Update(id int, p domain.Product) (product domain.Product, er error) {
+	if r.existCodeValue(product.Code_value) {
+		er = ErrProductCodeAlreadyExist
+		return
 	}
-
-	for i, p := range *r.db {
-		if p.ID == id {
-			updatedProduct.ID = id
-			(*r.db)[i] = updatedProduct
-			updated = !updated
-		}
+	p.ID = id
+	if err := r.db.UpdateOne(p); err != nil {
+		er = err
+		return
 	}
-
-	if !updated {
-		return domain.Product{}, ErrProdutNotFound
-	}
-	return updatedProduct, nil
+	product = p
+	return
 }
 
-func (r *repository) Delete(id int) (err error) {
-	var deleted bool
-	for index := range *r.db {
-		if (*r.db)[index].ID != id {
-			continue
-		}
-		*r.db = append((*r.db)[:index], (*r.db)[index+1:]...)
-		deleted = !deleted
-		break
-	}
-	if !deleted {
-		err = ErrProdutNotFound
+func (r *repository) Delete(id int) (er error) {
+	if err := r.db.DeleteOne(id); err != nil {
+		er = err
 		return
 	}
 	return

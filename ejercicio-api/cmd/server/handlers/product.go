@@ -5,7 +5,7 @@ import (
 	"errors"
 	"go-web-api/internal/products"
 	product "go-web-api/internal/products"
-	"go-web-api/pkg/response"
+	response "go-web-api/pkg/web"
 	"net/http"
 	"os"
 	"strconv"
