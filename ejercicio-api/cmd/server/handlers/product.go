@@ -110,6 +110,10 @@ func (p *Product) Create() gin.HandlerFunc {
 
 		product, err := p.sv.CreateProduct(req.Name, req.Quantity, req.Code_value, req.Is_published, req.Expiration, req.Price)
 		if err != nil {
+			switch err {
+			case products.ErrProductCodeAlreadyExist:
+				web.Failure(ctx, http.StatusBadRequest, nil)
+			}
 			web.Failure(ctx, http.StatusInternalServerError, nil)
 			return
 		}
