@@ -27,6 +27,9 @@ var (
 	ErrInvalidQuantity     = errors.New("The product's quantity must be > 0")
 	ErrInvalidPrice        = errors.New("The product's price must be > 0")
 	ErrUserUnauthorized    = errors.New("User unauthorized")
+	ErrProductNotFound     = errors.New("Cannot find product")
+	ErrCodeAlreadyExists   = errors.New("Code value already exists")
+	ErrSomethingWrong      = errors.New("Ups, something's wrong happened")
 )
 
 type NewProductRequest struct {
@@ -61,13 +64,13 @@ func (p *Product) GetById() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		paramId, err := strconv.Atoi(ctx.Param("id"))
 		if err != nil {
-			web.Failure(ctx, http.StatusBadRequest, nil)
+			web.Failure(ctx, http.StatusBadRequest, ErrInvalidParameter)
 			return
 		}
 
 		product, err := p.sv.GetProductById(paramId)
 		if err != nil {
-			web.Failure(ctx, http.StatusNotFound, nil)
+			web.Failure(ctx, http.StatusNotFound, ErrProductNotFound)
 			return
 		}
 
@@ -79,7 +82,7 @@ func (p *Product) GetMoreExpensiveThan() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		price, err := strconv.ParseFloat(ctx.Query("priceGt"), 64)
 		if err != nil {
-			web.Failure(ctx, http.StatusBadRequest, nil)
+			web.Failure(ctx, http.StatusBadRequest, ErrInvalidParameter)
 			return
 		}
 		products := p.sv.GetProductsMoreExpensiveThan(price)
@@ -89,9 +92,10 @@ func (p *Product) GetMoreExpensiveThan() gin.HandlerFunc {
 
 func (p *Product) Create() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// Consigo token de usuario y verifico que sea valido
 		token := ctx.GetHeader("token")
 		if token != os.Getenv("TOKEN") {
-			web.Failure(ctx, http.StatusUnauthorized, nil)
+			web.Failure(ctx, http.StatusUnauthorized, ErrUserUnauthorized)
 			return
 		}
 
@@ -112,9 +116,10 @@ func (p *Product) Create() gin.HandlerFunc {
 		if err != nil {
 			switch err {
 			case products.ErrProductCodeAlreadyExist:
-				web.Failure(ctx, http.StatusBadRequest, nil)
+				web.Failure(ctx, http.StatusBadRequest, ErrCodeAlreadyExists)
+			default:
+				web.Failure(ctx, http.StatusInternalServerError, nil)
 			}
-			web.Failure(ctx, http.StatusInternalServerError, nil)
 			return
 		}
 
@@ -127,16 +132,23 @@ func (p *Product) Update() gin.HandlerFunc {
 		// Consigo token de usuario y verifico que sea valido
 		token := ctx.GetHeader("token")
 		if token != os.Getenv("TOKEN") {
-			web.Failure(ctx, http.StatusUnauthorized, nil)
+			web.Failure(ctx, http.StatusUnauthorized, ErrUserUnauthorized)
 			return
 		}
 
 		// Busco si el producto existe en DB
 		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 		if err != nil {
-			web.Failure(ctx, http.StatusBadRequest, nil)
+			web.Failure(ctx, http.StatusBadRequest, ErrInvalidParameter)
 			return
 		}
+
+		_, er := p.sv.GetProductById(int(id))
+		if er != nil {
+			web.Failure(ctx, http.StatusNotFound, ErrProductNotFound)
+			return
+		}
+
 		var request NewProductRequest
 
 		if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -152,7 +164,7 @@ func (p *Product) Update() gin.HandlerFunc {
 
 		result, err := p.sv.Update(int(id), request.Name, request.Quantity, request.Code_value, request.Is_published, request.Expiration, request.Price)
 		if err != nil {
-			web.Failure(ctx, http.StatusNotFound, nil)
+			web.Failure(ctx, http.StatusNotFound, ErrProductNotFound)
 			return
 		}
 
@@ -165,28 +177,24 @@ func (p *Product) PartialUpdate() gin.HandlerFunc {
 		// Obtengo token de usuario y verifico que sea valido
 		token := ctx.GetHeader("token")
 		if token != os.Getenv("TOKEN") {
-			web.Failure(ctx, http.StatusUnauthorized, nil)
+			web.Failure(ctx, http.StatusUnauthorized, ErrUserUnauthorized)
 			return
 		}
 
 		// Obtengo el id pasado por parámetro
 		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 		if err != nil {
-			web.Failure(ctx, http.StatusBadRequest, nil)
+			web.Failure(ctx, http.StatusBadRequest, ErrInvalidParameter)
 			return
 		}
 
 		// Me traigo el producto desde la base
 		product, err := p.sv.GetProductById(int(id))
 		if err != nil {
-			switch err {
-			case products.ErrProdutNotFound:
-				web.Failure(ctx, http.StatusNotFound, nil)
-			default:
-				ctx.JSON(http.StatusInternalServerError, nil)
-			}
+			web.Failure(ctx, http.StatusNotFound, ErrProductNotFound)
 			return
 		}
+
 		if err = json.NewDecoder(ctx.Request.Body).Decode(&product); err != nil {
 			web.Failure(ctx, http.StatusBadRequest, nil)
 			return
@@ -195,7 +203,7 @@ func (p *Product) PartialUpdate() gin.HandlerFunc {
 		if err != nil {
 			switch err {
 			case products.ErrProdutNotFound:
-				web.Failure(ctx, http.StatusNotFound, nil)
+				web.Failure(ctx, http.StatusNotFound, ErrProductNotFound)
 			default:
 				ctx.JSON(http.StatusInternalServerError, nil)
 			}
@@ -211,22 +219,28 @@ func (p *Product) Delete() gin.HandlerFunc {
 		// Obtengo token de usuario y verifico que sea valido
 		token := ctx.GetHeader("token")
 		if token != os.Getenv("TOKEN") {
-			web.Failure(ctx, http.StatusUnauthorized, nil)
+			web.Failure(ctx, http.StatusUnauthorized, ErrUserUnauthorized)
 			return
 		}
 
 		id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 		if err != nil {
-			web.Failure(ctx, http.StatusBadRequest, nil)
+			web.Failure(ctx, http.StatusBadRequest, ErrInvalidParameter)
+			return
+		}
+
+		_, er := p.sv.GetProductById(int(id))
+		if er != nil {
+			web.Failure(ctx, http.StatusNotFound, ErrProductNotFound)
 			return
 		}
 
 		if err := p.sv.Delete(int(id)); err != nil {
-			web.Failure(ctx, http.StatusNotFound, nil)
+			web.Failure(ctx, http.StatusNotFound, ErrProductNotFound)
 			return
 		}
 
-		web.Success(ctx, http.StatusOK, id)
+		web.Success(ctx, http.StatusOK, nil)
 	}
 }
 
